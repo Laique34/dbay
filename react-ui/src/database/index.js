@@ -1,5 +1,6 @@
 import {
-    createListingTable
+    createListingTable,
+    addImageFieldInListingTable
 } from "./listing";
 import {
     createSettingsTable,
@@ -22,6 +23,9 @@ export async function setup() {
     return new Promise((resolve, reject) => {
         createListingTable().then((r) => {
             console.log('Listing table created or exists');
+            addImageFieldInListingTable().then(() => {
+                console.log('Image column added to listings table')
+            }).catch(undefined)
             createSettingsTable().then((r) => {
                 console.log('Settings table created or exists');
                 createHost(storeName, storeId).then((r) => {

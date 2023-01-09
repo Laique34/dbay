@@ -26,6 +26,7 @@ export default function ListingCreate() {
   const [success, setSuccess] = useState(null);
   const [form, setForm] = useState({
     name: "",
+    image: null,
     asking_price: "",
   });
   const [walletAddress, setWalletAddress] = useState("");
@@ -52,21 +53,51 @@ export default function ListingCreate() {
     });
   }
 
+  // This will verify image
+  // accept="image/*" will not work in TextField and default upload of MUI is not so good
+  function imageChange(e) {
+    e.preventDefault();
+    const {files} = e.target
+    if (files.length) {
+      const acceptedImageTypes = ['image/gif', 'image/jpeg', 'image/png'];
+      if (acceptedImageTypes.includes(files[0].type)) {
+        updateForm({image: e.target.files[0]})
+        return;
+      } else {
+        e.target.value = null;
+      }
+    }
+    updateForm({image: null})
+  //  You may through error here...
+  }
+
   // This function will handle the submission.
   async function onSubmit(e) {
     e.preventDefault();
+
+    if(form.image){
+      form.image = await new Promise(resolve => {
+        const myReader = new FileReader();
+        myReader.onloadend = (e) => {
+          resolve(myReader.result);
+        }
+        myReader.readAsDataURL(form.image);
+      })
+    }
+
     setLoading(true);
     setError(null);
 
     // When a post request is sent to the create url, we'll add a new record to the database.
     const newListing = { ...form };
+    const { name, image, asking_price: price } = newListing
+    const { pk: createdByPk, name: createdByName } = host
 
     createListing({
-      name: newListing.name,
-      price: newListing.asking_price,
-      createdByPk: host.pk,
-      createdByName: host.name,
-      walletAddress: walletAddress,
+      name, image, price,
+      createdByPk,
+      createdByName,
+      walletAddress,
     })
     .then(function(listingId) {
         console.log(`Listing successfully added: ${listingId}`);
@@ -75,16 +106,18 @@ export default function ListingCreate() {
       }).then((result) => {
         if (result.message){
           setError(`Could not send listing to contacts`);
+          setForm({ name: "", image: null, asking_price: "" });
           console.error(result.message);
           setLoading(false);
         } else {
           console.log('Successfully sent listing to contacts');
           setLoading(false);
-          setForm({ name: "", asking_price: "" });
+          setForm({ name: "", image: null, asking_price: "" });
           setSuccess(true);
         }
       }).catch((e) => {
         setError(`There was an error creating or sending your listing`);
+        setForm({ name: "", image: null, asking_price: "" });
         console.error(`Could not create or send listing ${e}`);
         setLoading(false);
       });
@@ -119,6 +152,7 @@ export default function ListingCreate() {
             <Grid item xs={12}>
               <TextField
                 label="Listing Title"
+                InputLabelProps={{ shrink: true }}
                 id="listing-name"
                 className="form-field"
                 type="text"
@@ -131,8 +165,25 @@ export default function ListingCreate() {
               />
             </Grid>
             <Grid item xs={12}>
+              <TextField
+                label="Image"
+                InputLabelProps={{ shrink: true }}
+                id="image"
+                className="form-field"
+                type="file"
+                required
+                fullWidth
+                name="image"
+                onChange={imageChange}
+                variant="outlined"
+              />
+            </Grid>
+            <Grid item xs={12}>
               <FormControl fullWidth>
-                <InputLabel htmlFor="asking-price">Asking Price *</InputLabel>
+                <InputLabel
+                  htmlFor="asking-price"
+                  InputLabelProps={{ shrink: true }}
+                >Asking Price *</InputLabel>
                 <OutlinedInput
                   id="asking-price"
                   value={form.asking_price}

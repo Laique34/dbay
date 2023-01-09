@@ -37,8 +37,22 @@ export function createListingTable() {
     })
 }
 
+export function addImageFieldInListingTable() {
+    const Q = `ALTER TABLE ${LISTINGSTABLE} ADD COLUMN 
+    "image" CHARACTER LARGE OBJECT AFTER "price";`;
+
+    return new Promise((resolve) => {
+        window.MDS.sql(Q, function (res) {
+            window.MDS.log(`MDS.SQL, ${Q}`);
+            if (res.status) {
+                resolve(true)
+            }
+        })
+    })
+}
+
 /* adds a listing to the database */
-export function createListing({ name, price, createdByPk, createdByName, listingId, sentByName, sentByPk, walletAddress, createdAt }) {
+export function createListing({ name, image, price, createdByPk, createdByName, listingId, sentByName, sentByPk, walletAddress, createdAt }) {
     const randomId = Math.trunc(Math.random() * 10000000000000000);
     const id = `${randomId}${createdByPk}`;
     const timestamp = Math.floor(Date.now() / 1000);
@@ -49,6 +63,7 @@ export function createListing({ name, price, createdByPk, createdByName, listing
             "listing_id",
             "name",
             "price",
+            "image",
             "created_by_pk",
             "created_by_name",
             ${sentByName ? '"sent_by_name",' : ''}
@@ -62,6 +77,7 @@ export function createListing({ name, price, createdByPk, createdByName, listing
             ${listingId ? `'${listingId}',` : `'${id}',`}
             '${name}',
             '${price}',
+            '${image}',
             '${createdByPk}',
             '${createdByName}',
             ${sentByName ? `'${sentByName}',` : ''}
@@ -88,6 +104,7 @@ export function createListing({ name, price, createdByPk, createdByName, listing
 createListing.propTypes = {
     name: PropTypes.string.isRequired,
     price: PropTypes.number.isRequired,
+    image: PropTypes.string,
     createdByPk: PropTypes.string.isRequired,
     createdByName: PropTypes.string.isRequired,
     listingId: PropTypes.string,
@@ -280,6 +297,7 @@ export async function processListing(entity) {
         listingId: entity.listing_id,
         name: entity.name,
         price: entity.price,
+        image: entity.image,
         createdByPk: entity.created_by_pk,
         createdByName: entity.created_by_name,
         sentByName: entity.sent_by_name,
